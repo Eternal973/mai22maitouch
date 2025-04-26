@@ -9,6 +9,7 @@ COM3 is the touch sensor's serial port for SDEY, COM13 for your controller (you 
 2.Edit GrooveMaster.ini, make sure DEV 1 and NO_SERIAL 0.  
 3.Run mai22maitouch.py，it will start listening COM3 and COM13.  
 4.Start your game, the TouchSensor check will be a GOOD=).  
+You may put a # before all the "print()" to disable printing to console, which may optimize speed and latency.
 # How it works
 Ref:[Sucareto/Mai2Touch-GitHub](https://github.com/Sucareto/Mai2Touch/blob/main/Mai2Touch/README.md)  
 Ref:[The MaiMai Touchscreen-bsnk.me](https://sega.bsnk.me/maimai/touch/#packet-format)  
