@@ -10,6 +10,8 @@ COM3 is the touch sensor's serial port for SDEY, COM13 for your controller (you 
 3.Run mai22maitouch.py，it will start listening COM3 and COM13.  
 4.Start your game, the TouchSensor check will be a GOOD=).  
 You may put a # before all the "print()" to disable printing to console, which may optimize speed and latency.
+# It works!
+Tested with SDEY1.99B, cool.  
 # How it works
 Ref:[Sucareto/Mai2Touch-GitHub](https://github.com/Sucareto/Mai2Touch/blob/main/Mai2Touch/README.md)  
 Ref:[The MaiMai Touchscreen-bsnk.me](https://sega.bsnk.me/maimai/touch/#packet-format)  
