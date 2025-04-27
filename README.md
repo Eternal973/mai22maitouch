@@ -20,13 +20,13 @@ The Individual bit breakdown for mai2
 | Byte | 7  | 6  | 5  | 4  | 3  | 2  | 1  | 0  | ASCII |
 |------|----|----|----|----|----|----|----|----|-------|
 | 0    | 0  | 0  | 1  | 0  | 1  | 0  | 0  | 0  | `(`   |
-| 1    | 0  | 0  | 0  | 0  | E8 | E7 | E6 | E5 | _varies_ |
-| 2    | 0  | 0  | 0  | E4 | E3 | E2 | E1 | D8 | _varies_ |
-| 3    | 0  | 0  | 0  | D7 | D6 | D5 | D4 | D3 | _varies_ |
+| 1    | 0  | 0  | 0  | A5  | A4 | A3 | A2 | A1 | _varies_ |
+| 2    | 0  | 0  | 0  | B2 | B1 | A8 | A7 | A6 | _varies_ |
+| 3    | 0  | 0  | 0  | B7 | B6 | B5 | B4 | B3 | _varies_ |
 | 4    | 0  | 0  | 0  | D2 | D1 | C2 | C1 | B8 | _varies_ |
-| 5    | 0  | 0  | 0  | B7 | B6 | B5 | B4 | B3 | _varies_ |
-| 6    | 0  | 0  | 0  | B2 | B1 | A8 | A7 | A6 | _varies_ |
-| 7    | 0  | 0  | 0  | A5 | A4 | A3 | A2 | A1 | _varies_ |
+| 5    | 0  | 0  | 0  | D7 | D6 | D5 | D4 | D3 | _varies_ |
+| 6    | 0  | 0  | 0  | E4 | E3 | E2 | E1 | D8 | _varies_ |
+| 7    | 0  | 0  | 0  | 0  | E8 | E7 | E6 | E5 | _varies_ |
 | 8    | 0  | 0  | 1  | 0  | 1  | 0  | 0  | 1  | `)`   |
   
 The Individual bit breakdown for mai  
