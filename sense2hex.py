@@ -76,7 +76,7 @@ def format_output(data):
 
 
 def main():
-    print("Enter your command (e.g., 'mai2:A128,B123,C1,D8,E245' or 'mai:A17,B23,C'):")
+    print("Enter your command (e.g., 'mai2:A1,A8,B1,B3,C1,D8,E2,E5' or 'mai:A1,A7,B2,B3,C'):")
     while True:
         user_input = input().strip()
         if user_input.startswith('mai2:'):
