@@ -4,8 +4,8 @@ import time
 from datetime import datetime
 
 # Serial port configurations
-COM3 = 'COM23'  # Game program
-COM13 = 'COM33'  # Touchscreen controller
+GOPI = 'COM33'  # Game out Python in
+CIPO = 'COM13'  # Controller in Python out
 BAUD_RATE = 9600
 
 # Default all-zero state for the game (14 bytes including start/end markers)
@@ -21,11 +21,11 @@ ALL_ZERO_STATE = bytes([
 class TouchBridge:
     def __init__(self):
         self.active = False
-        self.com3 = None
-        self.com13 = None
+        self.GOPI = None
+        self.CIPO = None
         self.lock = threading.Lock()
         self.received_commands = []
-        self.command_log_file = "com3_commands.log"
+        self.command_log_file = "GOPI_commands.log"
         # 存储XXkY映射关系的字典
         self.key_mappings = {}  # 格式: {"XX": bytes([Y])}
         
@@ -91,12 +91,12 @@ class TouchBridge:
     
         return bytes(mai_data)
     
-    def handle_com3_to_com13(self):
+    def handle_GOPI_to_CIPO(self):
         """Handle communication from game to touch controller"""
         while True:
             try:
-                if self.com3.in_waiting > 0:
-                    data = self.com3.read(self.com3.in_waiting)
+                if self.GOPI.in_waiting > 0:
+                    data = self.GOPI.read(self.GOPI.in_waiting)
                     self.log_command(data)
                     
                     # 处理特殊格式{XXkY}的命令（建立映射关系）
@@ -109,7 +109,7 @@ class TouchBridge:
                             # 响应(xx  )
                             response = b'(' + data[1:3] + b'  )'
                             with self.lock:
-                                self.com3.write(response)
+                                self.GOPI.write(response)
                             print(f"Registered mapping: {prefix} -> {suffix}")
                             print(f"Responded to mapping command: {data} -> {response}")
                             continue
@@ -124,7 +124,7 @@ class TouchBridge:
                                 # 响应(xx Y)
                                 response = b'(' + data[1:3] + b' ' + y_value + b')'
                                 with self.lock:
-                                    self.com3.write(response)
+                                    self.GOPI.write(response)
                                 print(f"Responded to query: {data} -> {response}")
                             else:
                                 print(f"No mapping found for prefix: {prefix}")
@@ -134,47 +134,47 @@ class TouchBridge:
                     if b'{STAT}' in data:
                         with self.lock:
                             self.active = True
-                            self.com3.write(ALL_ZERO_STATE)
-                            self.com13.write(b'{STAT}')
+                            self.GOPI.write(ALL_ZERO_STATE)
+                            self.CIPO.write(b'{STAT}')
                             print("Handled STAT command")
                     elif b'{HALT}' in data:
                         with self.lock:
                             self.active = False
-                            self.com13.write(b'{HALT}')
+                            self.CIPO.write(b'{HALT}')
                             print("Handled HALT command")
                             
             except Exception as e:
-                print(f"Error in COM3 handler: {e}")
+                print(f"Error in GOPI handler: {e}")
                 time.sleep(1)
 
-    def handle_com13_to_com3(self):
+    def handle_CIPO_to_GOPI(self):
         """Handle communication from touch controller to game"""
         while True:
             try:
-                if self.com13.in_waiting > 0:
-                    data = self.com13.read_until(b'\x29')  # Read until ')'
+                if self.CIPO.in_waiting > 0:
+                    data = self.CIPO.read_until(b'\x29')  # Read until ')'
                     if data.startswith(b'\x28') and len(data) == 9:  # Valid packet
                         with self.lock:
                             if self.active:
                                 transformed = self.transform_touch_data(data)
-                                self.com3.write(transformed)
+                                self.GOPI.write(transformed)
                                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
                                 print(f"[{timestamp}] Transformed Data Sent: {transformed}")
                     elif data in (b'{STAT}', b'{HALT}'):
                         with self.lock:
-                            self.com3.write(data)
+                            self.GOPI.write(data)
             except Exception as e:
-                print(f"Error in COM13 handler: {e}")
+                print(f"Error in CIPO handler: {e}")
                 time.sleep(1)
 
     def run(self):
         try:
-            with serial.Serial(COM3, BAUD_RATE, timeout=1) as self.com3, \
-                 serial.Serial(COM13, BAUD_RATE, timeout=1) as self.com13:
+            with serial.Serial(GOPI, BAUD_RATE, timeout=1) as self.GOPI, \
+                 serial.Serial(CIPO, BAUD_RATE, timeout=1) as self.CIPO:
                 
                 print(f"Touch bridge started at {datetime.now()}")
-                print(f"COM3: {self.com3.name}, COM13: {self.com13.name}")
-                print("All received COM3 commands will be logged to com3_commands.log")
+                print(f"GOPI: {self.GOPI.name}, CIPO: {self.CIPO.name}")
+                print("All received GOPI commands will be logged to GOPI_commands.log")
                 print("Monitoring for commands:")
                 print("- {STAT}: Activate bridge and send zero state")
                 print("- {HALT}: Deactivate bridge")
@@ -184,13 +184,13 @@ class TouchBridge:
                 with open(self.command_log_file, "a", encoding="utf-8") as f:
                     f.write(f"\n\n===== Session started at {datetime.now()} =====\n")
                 
-                com3_thread = threading.Thread(
-                    target=self.handle_com3_to_com13, daemon=True)
-                com13_thread = threading.Thread(
-                    target=self.handle_com13_to_com3, daemon=True)
+                GOPI_thread = threading.Thread(
+                    target=self.handle_GOPI_to_CIPO, daemon=True)
+                CIPO_thread = threading.Thread(
+                    target=self.handle_CIPO_to_GOPI, daemon=True)
                 
-                com3_thread.start()
-                com13_thread.start()
+                GOPI_thread.start()
+                CIPO_thread.start()
                 
                 while True:
                     time.sleep(1)
@@ -206,10 +206,10 @@ class TouchBridge:
             with open(self.command_log_file, "a", encoding="utf-8") as f:
                 f.write(f"Error occurred: {e}\n")
         finally:
-            if hasattr(self, 'com3') and self.com3:
-                self.com3.close()
-            if hasattr(self, 'com13') and self.com13:
-                self.com13.close()
+            if hasattr(self, 'GOPI') and self.GOPI:
+                self.GOPI.close()
+            if hasattr(self, 'CIPO') and self.CIPO:
+                self.CIPO.close()
 
 if __name__ == "__main__":
     bridge = TouchBridge()
