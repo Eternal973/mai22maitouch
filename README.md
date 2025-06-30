@@ -6,8 +6,8 @@ I really don't know if there's better way, I'm not good at programming, this is 
 **Thanks to [@clansty](https://github.com/clansty), now we have correct Individual bit breakdown for mai2, already updated. AI is really not good at orders/tables/numbers, they will make everything messed up:(**  
 # How to Use
 You only need mai22maitouch.py, pther files is for testing.  
-1.Use [com0com](https://github.com/vovsoft/com0com) to generate 2 pairs, COM3 <-> COM23, COM13 <-> COM33.  
-COM3 is the touch sensor's serial port for SDEY, COM13 for your controller (you can change it if need), COM23 COM33 for python to use (whatever you like)  
+1.Use [com0com](https://github.com/vovsoft/com0com) to generate pair COM33<->COM3.
+3 serial ports for mai22maitouch, COM13 for your device(edit in Device Manager), COM33(virtual) for python to write in data, COM3(virtual) for game to read.
 2.Edit GrooveMaster.ini (config for maimai_dump_.exe), make sure DEV 1 and NO_SERIAL 0. I don't know much about how micetools work, you can try by yourself if you use micetools.  
 3.Run mai22maitouch.py，it will start listening COM3 and COM13 (connect and config your controller's port first!).  
 4.Start your game, the TouchSensor check will be a GOOD=).  
