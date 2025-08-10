@@ -5,7 +5,7 @@ Support ADX Serial Mode, HDX, [mai_pico](https://github.com/whowechina/mai_pico)
 I really don't know if there's better way, I'm not good at programming, this is only for my own need. 
 **Thanks to [@clansty](https://github.com/clansty), now we have correct Individual bit breakdown for mai2, already updated. AI is really not good at orders/tables/numbers, they will make everything messed up:(**  
 # How to Use
-You only need mai22maitouch.py, pther files is for testing.  
+You only need mai22maitouch.py, other files is for testing.  
 1.Use [com0com](https://github.com/vovsoft/com0com) to generate pair COM33<->COM3.
 3 serial ports for mai22maitouch, COM13 for your device(edit in Device Manager), COM33(virtual) for python to write in data, COM3(virtual) for game to read.
 2.Edit GrooveMaster.ini (config for maimai_dump_.exe), make sure DEV 1 and NO_SERIAL 0. I don't know much about how micetools work, you can try by yourself if you use micetools.  
