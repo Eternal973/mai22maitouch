@@ -34,8 +34,8 @@ button_mapping = {
     14: 'x',       # 1P 5号键
     13: 'z',       # 1P 6号键
     12: 'a',       # 1P 7号键
-    11: 'q',       # 1P 8号键
-    '''
+    11: 'q'       # 1P 8号键
+    ''',
     #可根据需要添加
     19: 'num 8',   # 2P 1号键
     20: 'num 9',   # 2P 2号键
@@ -49,8 +49,9 @@ button_mapping = {
 }
 
 # 输入延迟设置（毫秒）
+# 实验性功能，设置为0以关闭
 # 由于旧框尾判特性，不建议高于25ms
-delay_ms = 20
+delay_ms = 0
 
 # 延迟事件缓冲区
 delayed_buffer = deque()
@@ -83,7 +84,16 @@ def handle_button(button_id, pressed):
 print("手柄按键监听已启动，按Ctrl+C退出")
 
 try:
-    while True:
+    while delay_ms == 0:
+        # 处理所有pygame事件
+        for event in pygame.event.get():
+            # 根据事件类型处理按键
+            if event.type == pygame.JOYBUTTONDOWN:
+                handle_button(event.button, True)
+            elif event.type == pygame.JOYBUTTONUP:
+                handle_button(event.button, False)
+
+    while delay_ms > 0:
         # 获取当前时间（毫秒）
         current_time = time.time() * 1000  
         
