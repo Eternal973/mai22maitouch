@@ -30,7 +30,7 @@ class TouchBridge:
         # 存储XXkY映射关系的字典
         self.key_mappings = {}  # 格式: {"XX": bytes([Y])}
         
-        self.delay_ms = 16  # 在这里输入你增加的输入延迟(不建议大于25)
+        self.delay_ms = 16  # 输入延迟(不建议大于25)
         self.delayed_buffer = deque()  
         self.last_state = ALL_ZERO_STATE  
 
@@ -160,7 +160,6 @@ class TouchBridge:
                 if self.CIPO.in_waiting > 0:
                     data = self.CIPO.read(self.CIPO.in_waiting)
                     
-                   
                     if data.startswith(b'\x28') and data.endswith(b'\x29'):
                         if len(data) == 9:  
                             release_time = time.time() + (self.delay_ms / 1000)
@@ -176,12 +175,10 @@ class TouchBridge:
                                         with self.lock:
                                             self.delayed_buffer.append((full_packet, release_time))
                     
-                    
                     elif data in (b'{STAT}', b'{HALT}'):
                         with self.lock:
                             self.GOPI.write(data)
                 
-               
                 current_time = time.time()
                 while True:
                     with self.lock:
@@ -199,11 +196,9 @@ class TouchBridge:
                             except Exception as e:
                                 print(f"Error transforming data: {e}")
                 
-            
                 if not self.delayed_buffer and self.active:
                     with self.lock:
                         self.GOPI.write(self.last_state)
-                
                 
                 time.sleep(0.001)
                 
@@ -230,11 +225,9 @@ class TouchBridge:
                 f.write(f"\n\n===== Session started at {datetime.now()} =====\n")
                 f.write(f"Input delay: {self.delay_ms}ms\n")
             
-            
-            GOPI_thread = threading.Thread(
-                target=self.handle_GOPI_to_CIPO, daemon=True)
-            CIPO_thread = threading.Thread(
-                target=self.handle_CIPO_to_GOPI, daemon=True)
+            # 启动处理线程
+            GOPI_thread = threading.Thread(target=self.handle_GOPI_to_CIPO, daemon=True)
+            CIPO_thread = threading.Thread(target=self.handle_CIPO_to_GOPI, daemon=True)
             
             GOPI_thread.start()
             CIPO_thread.start()
