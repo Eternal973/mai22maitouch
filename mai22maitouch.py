@@ -2,6 +2,7 @@ import serial
 import threading
 import time
 from datetime import datetime
+from collections import deque
 
 # Serial port configurations
 GOPI = 'COM33'  # Game out Python in
@@ -29,6 +30,10 @@ class TouchBridge:
         # 存储XXkY映射关系的字典
         self.key_mappings = {}  # 格式: {"XX": bytes([Y])}
         
+        self.delay_ms = 16  # 输入延迟(不建议大于25)
+        self.delayed_buffer = deque()  
+        self.last_state = ALL_ZERO_STATE  
+
     def log_command(self, data):
         """记录所有接收到的COM3指令"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
@@ -136,6 +141,7 @@ class TouchBridge:
                             self.active = True
                             self.GOPI.write(ALL_ZERO_STATE)
                             self.CIPO.write(b'{STAT}')
+                            self.last_state = ALL_ZERO_STATE
                             print("Handled STAT command")
                     elif b'{HALT}' in data:
                         with self.lock:
@@ -152,49 +158,83 @@ class TouchBridge:
         while True:
             try:
                 if self.CIPO.in_waiting > 0:
-                    data = self.CIPO.read_until(b'\x29')  # Read until ')'
-                    if data.startswith(b'\x28') and len(data) == 9:  # Valid packet
-                        with self.lock:
-                            if self.active:
-                                transformed = self.transform_touch_data(data)
-                                self.GOPI.write(transformed)
-                                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-                                print(f"[{timestamp}] Transformed Data Sent: {transformed}")
+                    data = self.CIPO.read(self.CIPO.in_waiting)
+                    
+                    if data.startswith(b'\x28') and data.endswith(b'\x29'):
+                        if len(data) == 9:  
+                            release_time = time.time() + (self.delay_ms / 1000)
+                            with self.lock:
+                                self.delayed_buffer.append((data, release_time))
+                        elif len(data) > 9:  
+                            packets = data.split(b'\x29')
+                            for packet in packets:
+                                if len(packet) >= 8:
+                                    full_packet = packet + b'\x29'
+                                    if len(full_packet) == 9:
+                                        release_time = time.time() + (self.delay_ms / 1000)
+                                        with self.lock:
+                                            self.delayed_buffer.append((full_packet, release_time))
+                    
                     elif data in (b'{STAT}', b'{HALT}'):
                         with self.lock:
                             self.GOPI.write(data)
+                
+                current_time = time.time()
+                while True:
+                    with self.lock:
+                        if not self.delayed_buffer or current_time < self.delayed_buffer[0][1]:
+                            break
+                        
+                        delayed_data, _ = self.delayed_buffer.popleft()
+                        if self.active:
+                            try:
+                                transformed = self.transform_touch_data(delayed_data)
+                                self.GOPI.write(transformed)
+                                self.last_state = transformed
+                                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                                print(f"[{timestamp}] Delayed({self.delay_ms}ms) Data Sent: {transformed}")
+                            except Exception as e:
+                                print(f"Error transforming data: {e}")
+                
+                if not self.delayed_buffer and self.active:
+                    with self.lock:
+                        self.GOPI.write(self.last_state)
+                
+                time.sleep(0.001)
+                
             except Exception as e:
                 print(f"Error in CIPO handler: {e}")
                 time.sleep(1)
 
     def run(self):
         try:
-            with serial.Serial(GOPI, BAUD_RATE, timeout=1) as self.GOPI, \
-                 serial.Serial(CIPO, BAUD_RATE, timeout=1) as self.CIPO:
+            self.GOPI = serial.Serial(GOPI, BAUD_RATE, timeout=0.1)
+            self.CIPO = serial.Serial(CIPO, BAUD_RATE, timeout=0.1)
+            
+            print(f"Touch bridge started at {datetime.now()}")
+            print(f"GOPI: {self.GOPI.name}, CIPO: {self.CIPO.name}")
+            print(f"Input delay set to {self.delay_ms}ms")
+            print("All received GOPI commands will be logged to GOPI_commands.log")
+            print("Monitoring for commands:")
+            print("- {STAT}: Activate bridge and send zero state")
+            print("- {HALT}: Deactivate bridge")
+            print("- {XXkY}: Register mapping (XX -> Y), respond with (XX  )")
+            print("- {XXth}: Query mapping for XX, respond with (XX Y) if found")
+            
+            with open(self.command_log_file, "a", encoding="utf-8") as f:
+                f.write(f"\n\n===== Session started at {datetime.now()} =====\n")
+                f.write(f"Input delay: {self.delay_ms}ms\n")
+            
+            # 启动处理线程
+            GOPI_thread = threading.Thread(target=self.handle_GOPI_to_CIPO, daemon=True)
+            CIPO_thread = threading.Thread(target=self.handle_CIPO_to_GOPI, daemon=True)
+            
+            GOPI_thread.start()
+            CIPO_thread.start()
+            
+            while True:
+                time.sleep(1)
                 
-                print(f"Touch bridge started at {datetime.now()}")
-                print(f"GOPI: {self.GOPI.name}, CIPO: {self.CIPO.name}")
-                print("All received GOPI commands will be logged to GOPI_commands.log")
-                print("Monitoring for commands:")
-                print("- {STAT}: Activate bridge and send zero state")
-                print("- {HALT}: Deactivate bridge")
-                print("- {XXkY}: Register mapping (XX -> Y), respond with (XX  )")
-                print("- {XXth}: Query mapping for XX, respond with (XX Y) if found")
-                
-                with open(self.command_log_file, "a", encoding="utf-8") as f:
-                    f.write(f"\n\n===== Session started at {datetime.now()} =====\n")
-                
-                GOPI_thread = threading.Thread(
-                    target=self.handle_GOPI_to_CIPO, daemon=True)
-                CIPO_thread = threading.Thread(
-                    target=self.handle_CIPO_to_GOPI, daemon=True)
-                
-                GOPI_thread.start()
-                CIPO_thread.start()
-                
-                while True:
-                    time.sleep(1)
-                    
         except KeyboardInterrupt:
             print("\nStopping touch bridge...")
             with open(self.command_log_file, "a", encoding="utf-8") as f:
